@@ -7,7 +7,20 @@ import { exportPdf } from './export.js';
 const pdfjsLib = globalThis.pdfjsLib;
 const SIZES = [1, 2, 4, 8];
 const UNDO_CAP = 100;
-const THEMES = ['graphite', 'phosphor', 'cobalt', 'paper'];
+const THEMES = [
+  { id: 'graphite', kind: 'dark' },
+  { id: 'mono', kind: 'dark' },
+  { id: 'midnight', kind: 'dark' },
+  { id: 'phosphor', kind: 'dark' },
+  { id: 'paper', kind: 'light' },
+  { id: 'parchment', kind: 'light' },
+  { id: 'snow', kind: 'light' },
+];
+const THEME_DOTS = {
+  graphite: '#f5a524', mono: '#ffffff', midnight: '#7aa2f7', phosphor: '#4cc38a',
+  paper: '#d9572b', parchment: '#2c4a8a', snow: '#171717',
+};
+const THEME_KEY = 'quik-sign:theme';
 const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 const state = {
@@ -729,23 +742,125 @@ function toggleLayer() {
 
 // ---------- theme ----------
 
-let themeIndex = 0;
-
-function nextTheme() {
-  themeIndex = (themeIndex + 1) % THEMES.length;
-  const name = THEMES[themeIndex];
-  if (name === 'graphite') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = name;
-  $('theme-text').textContent = name;
+function applyTheme(id, { save = true } = {}) {
+  if (id === 'graphite') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = id;
   for (const p of state.pages) {
     applyCursor(p);
     drawInk(p);
   }
   renderSigs();
-  setStatus(`theme ${name}`);
+  $('theme-text').textContent = id;
+  $('theme-dot').style.setProperty('--dot', THEME_DOTS[id]);
+  for (const o of themeOptions()) o.setAttribute('aria-selected', String(o.dataset.theme === id));
+  if (save) {
+    try { localStorage.setItem(THEME_KEY, id); } catch {}
+  }
 }
 
-// ---------- saved signatures (the only thing kept in browser storage) ----------
+function storedTheme() {
+  let id = null;
+  try { id = localStorage.getItem(THEME_KEY); } catch {}
+  return THEMES.some(t => t.id === id) ? id : 'graphite';
+}
+
+const CHECK_SVG = '<svg class="check" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5"/></svg>';
+
+function themeOptions() {
+  return [...$('theme-list').querySelectorAll('.menu-item')];
+}
+
+function buildThemeMenu() {
+  const list = $('theme-list');
+  list.textContent = '';
+  let kind = null;
+  for (const t of THEMES) {
+    if (t.kind !== kind) {
+      if (kind) list.append(Object.assign(document.createElement('div'), { className: 'menu-sep' }));
+      list.append(Object.assign(document.createElement('div'), { className: 'menu-group', textContent: t.kind }));
+      kind = t.kind;
+    }
+    const b = document.createElement('button');
+    b.className = 'menu-item';
+    b.setAttribute('role', 'option');
+    b.dataset.theme = t.id;
+    b.setAttribute('aria-selected', 'false');
+    b.innerHTML = `<span class="theme-dot" style="--dot:${THEME_DOTS[t.id]}"></span><span>${t.id}</span>${CHECK_SVG}`;
+    list.append(b);
+  }
+}
+
+let menuCloseTimer = 0;
+
+function menuIsOpen() {
+  return $('btn-theme').getAttribute('aria-expanded') === 'true';
+}
+
+function openThemeMenu() {
+  const list = $('theme-list');
+  clearTimeout(menuCloseTimer);
+  list.hidden = false;
+  $('btn-theme').setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => list.classList.add('is-open'));
+  (themeOptions().find(o => o.getAttribute('aria-selected') === 'true') || themeOptions()[0]).focus();
+}
+
+function closeThemeMenu({ refocus = false } = {}) {
+  if (!menuIsOpen()) return;
+  const list = $('theme-list');
+  $('btn-theme').setAttribute('aria-expanded', 'false');
+  list.classList.remove('is-open');
+  clearTimeout(menuCloseTimer);
+  menuCloseTimer = setTimeout(() => { list.hidden = true; }, 160);
+  if (refocus) $('btn-theme').focus();
+}
+
+function pickTheme(id) {
+  applyTheme(id);
+  closeThemeMenu({ refocus: true });
+  setStatus(`theme ${id}`);
+}
+
+function wireThemeMenu() {
+  buildThemeMenu();
+  const list = $('theme-list');
+  $('btn-theme').addEventListener('click', () => {
+    if (menuIsOpen()) closeThemeMenu();
+    else openThemeMenu();
+  });
+  list.addEventListener('click', e => {
+    const o = e.target.closest('.menu-item');
+    if (o) pickTheme(o.dataset.theme);
+  });
+  list.addEventListener('keydown', e => {
+    const opts = themeOptions();
+    const i = opts.indexOf(document.activeElement);
+    let next = -1;
+    if (e.key === 'ArrowDown') next = (i + 1) % opts.length;
+    else if (e.key === 'ArrowUp') next = (i - 1 + opts.length) % opts.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = opts.length - 1;
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (i >= 0) pickTheme(opts[i].dataset.theme);
+      return;
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeThemeMenu({ refocus: true });
+      return;
+    } else if (e.key === 'Tab') {
+      closeThemeMenu();
+      return;
+    } else return;
+    e.preventDefault();
+    opts[next].focus();
+  });
+  document.addEventListener('pointerdown', e => {
+    if (menuIsOpen() && !$('theme-menu').contains(e.target)) closeThemeMenu();
+  });
+}
+
+// ---------- saved signatures (kept in browser storage, beside the theme) ----------
 
 const SIG_KEY = 'quik-sign:signatures:v1';
 const SIG_MAX = 8;
@@ -990,7 +1105,7 @@ function wire() {
   $('btn-undo').addEventListener('click', undo);
   $('btn-redo').addEventListener('click', redo);
   $('btn-layer').addEventListener('click', toggleLayer);
-  $('btn-theme').addEventListener('click', nextTheme);
+  wireThemeMenu();
   $('btn-save').addEventListener('click', save);
   $('btn-zoom-in').addEventListener('click', zoomIn);
   $('btn-zoom-out').addEventListener('click', zoomOut);
@@ -1021,6 +1136,7 @@ function wire() {
 function onKey(e) {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+  if (t && t.closest && t.closest('#theme-menu')) return;
   const key = e.key.toLowerCase();
   const mod = e.ctrlKey || e.metaKey;
   const plain = !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -1028,7 +1144,6 @@ function onKey(e) {
   let handled = true;
 
   if (plain && key === 'o') pickFile();
-  else if (plain && key === 't') nextTheme();
   else if (!hasDoc) handled = false;
   else if (mod && key === 'z' && e.shiftKey) redo();
   else if (mod && key === 'z') undo();
@@ -1090,7 +1205,7 @@ body.dataset.tool = state.tool;
 setTool(state.tool);
 setSize(state.size);
 setColor(state.color);
-renderSigs();
+applyTheme(storedTheme(), { save: false });
 updateUi();
 
 window.__quiksign = { state, exportPdf: exportCurrent };
