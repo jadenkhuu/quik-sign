@@ -107,8 +107,7 @@ async function openFile(file) {
 
 function buildPages() {
   pagesEl.textContent = '';
-  const grid = $('page-grid');
-  grid.textContent = '';
+  resetThumbs();
   const n = state.pages.length;
   for (const p of state.pages) {
     const wrap = document.createElement('div');
@@ -125,14 +124,8 @@ function buildPages() {
     el.append(pdfCanvas, inkCanvas);
     wrap.append(label, el);
     pagesEl.appendChild(wrap);
-    const cell = document.createElement('button');
-    cell.className = 'page-cell';
-    cell.dataset.index = String(p.index);
-    cell.setAttribute('aria-label', `Go to page ${p.index + 1}`);
-    cell.textContent = String(p.index + 1);
-    cell.addEventListener('click', () => goToPage(p.index));
-    grid.appendChild(cell);
-    Object.assign(p, { wrap, el, label, cell, pdfCanvas, inkCanvas });
+    Object.assign(p, { wrap, el, label, pdfCanvas, inkCanvas });
+    buildThumb(p);
     wireInk(p);
     applyCursor(p);
   }
@@ -190,7 +183,11 @@ async function layout() {
       if (gen !== layoutGen) return;
     }
   }
-  if (gen === layoutGen) renderTask = null;
+  if (gen === layoutGen) {
+    renderTask = null;
+    mainRenderDone = true;
+    pumpThumbs();
+  }
 }
 
 let resizeTimer = 0;
@@ -232,6 +229,105 @@ function zoomFit() {
   relayoutKeepingScroll();
 }
 
+// ---------- thumbnails ----------
+
+const THUMB_W = 112;
+let thumbGen = 0;
+let thumbQueue = [];
+let thumbRunning = false;
+let mainRenderDone = false;
+let thumbObserver = null;
+
+function resetThumbs() {
+  thumbGen++;
+  thumbQueue = [];
+  mainRenderDone = false;
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbObserver = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const p = state.pages[Number(e.target.dataset.index)];
+      if (p && p.thumb === e.target && !p.thumbBase && !thumbQueue.includes(p)) thumbQueue.push(p);
+    }
+    pumpThumbs();
+  }, { root: $('thumb-list'), rootMargin: '300px' });
+  $('thumb-list').textContent = '';
+}
+
+function buildThumb(p) {
+  const n = p.index + 1;
+  const thumb = document.createElement('button');
+  thumb.className = 'thumb';
+  thumb.dataset.index = String(p.index);
+  thumb.setAttribute('aria-label', `Go to page ${n}`);
+  thumb.title = `Page ${n}`;
+  const canvas = document.createElement('canvas');
+  const num = document.createElement('span');
+  num.className = 'thumb-num';
+  num.textContent = String(n);
+  thumb.append(canvas, num);
+  thumb.addEventListener('click', () => goToPage(p.index));
+  $('thumb-list').appendChild(thumb);
+  const thumbScale = THUMB_W / p.viewport.width;
+  const dpr = window.devicePixelRatio || 1;
+  const cssH = Math.round(p.viewport.height * thumbScale);
+  canvas.style.height = `${cssH}px`;
+  canvas.width = Math.round(THUMB_W * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  Object.assign(p, { thumb, thumbCanvas: canvas, thumbScale, thumbDpr: dpr, thumbBase: null, thumbTimer: 0 });
+  thumbObserver.observe(thumb);
+}
+
+// Renders queued thumbnail bases one at a time, after the main pages have rendered.
+async function pumpThumbs() {
+  if (thumbRunning || !mainRenderDone) return;
+  thumbRunning = true;
+  const gen = thumbGen;
+  while (thumbQueue.length && gen === thumbGen) {
+    const p = thumbQueue.shift();
+    if (p.thumbBase) continue;
+    const base = document.createElement('canvas');
+    base.width = p.thumbCanvas.width;
+    base.height = p.thumbCanvas.height;
+    try {
+      await p.page.render({ canvasContext: base.getContext('2d'), viewport: p.page.getViewport({ scale: p.thumbScale * p.thumbDpr }) }).promise;
+    } catch {
+      continue;
+    }
+    if (gen !== thumbGen) break;
+    p.thumbBase = base;
+    drawThumb(p);
+  }
+  thumbRunning = false;
+  if (gen !== thumbGen) pumpThumbs();
+}
+
+function drawThumb(p) {
+  if (!p.thumbCanvas) return;
+  const c = p.thumbCanvas;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, c.width, c.height);
+  if (p.thumbBase) ctx.drawImage(p.thumbBase, 0, 0, c.width, c.height);
+  const s = p.thumbDpr * p.thumbScale;
+  ctx.setTransform(s, 0, 0, s, 0, 0);
+  paintStrokes(ctx, p.strokes);
+}
+
+function scheduleThumb(p) {
+  if (!p.thumbCanvas) return;
+  clearTimeout(p.thumbTimer);
+  p.thumbTimer = setTimeout(() => drawThumb(p), 120);
+}
+
+function toggleThumbs() {
+  if (!state.pdf) return;
+  const hidden = body.classList.toggle('thumbs-hidden');
+  $('btn-thumbs').setAttribute('aria-pressed', String(!hidden));
+  relayoutKeepingScroll();
+  setStatus(hidden ? 'pages hidden' : 'pages shown');
+}
+
 // ---------- ink drawing ----------
 
 function selectedStrokes(p) {
@@ -246,14 +342,11 @@ function selectionRects(p) {
   return { bb, ex: { x: bb.x - pad, y: bb.y - pad, w: bb.w + 2 * pad, h: bb.h + 2 * pad } };
 }
 
-function drawInk(p) {
-  const ctx = p.inkCanvas.getContext('2d');
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, p.inkCanvas.width, p.inkCanvas.height);
-  ctx.setTransform(p.dpr * p.scale, 0, 0, p.dpr * p.scale, 0, 0);
+// Paints strokes in their own colour and width; the caller sets the pt -> pixel transform.
+function paintStrokes(ctx, strokes) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  for (const s of p.strokes) {
+  for (const s of strokes) {
     ctx.strokeStyle = s.color;
     ctx.lineWidth = s.width;
     ctx.beginPath();
@@ -262,6 +355,19 @@ function drawInk(p) {
     for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
     ctx.stroke();
   }
+}
+
+function drawInk(p) {
+  const ctx = p.inkCanvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, p.inkCanvas.width, p.inkCanvas.height);
+  ctx.setTransform(p.dpr * p.scale, 0, 0, p.dpr * p.scale, 0, 0);
+  paintStrokes(ctx, p.strokes);
+  drawSelection(ctx, p);
+  scheduleThumb(p);
+}
+
+function drawSelection(ctx, p) {
   const sel = selectionRects(p);
   if (sel) {
     const { ex } = sel;
@@ -819,7 +925,8 @@ function updateUi() {
 }
 
 function updatePageNav(hasDoc) {
-  $('pages-section').hidden = !hasDoc;
+  const off = (el, v) => { el.disabled = v; };
+  off($('btn-thumbs'), !hasDoc);
   if (!hasDoc) return;
   const n = state.pages.length;
   let inked = 0;
@@ -828,18 +935,18 @@ function updatePageNav(hasDoc) {
     if (k) inked++;
     const label = `page ${p.index + 1} / ${n}${k ? ` · ${plural(k, 'stroke')}` : ''}`;
     if (p.label.textContent !== label) p.label.textContent = label;
-    p.cell.classList.toggle('is-current', p.index === state.active);
-    p.cell.classList.toggle('has-ink', k > 0);
+    p.thumb.classList.toggle('is-current', p.index === state.active);
+    p.thumb.classList.toggle('has-ink', k > 0);
   }
   $('pages-summary').textContent = inked ? `${inked} inked` : '';
-  // Keep the current cell visible inside the grid only, without scrolling the sidebar or viewer.
-  const grid = $('page-grid');
-  const cell = state.pages[state.active]?.cell;
-  if (!cell) return;
-  const g = grid.getBoundingClientRect();
-  const c = cell.getBoundingClientRect();
-  if (c.top < g.top) grid.scrollTop -= g.top - c.top;
-  else if (c.bottom > g.bottom) grid.scrollTop += c.bottom - g.bottom;
+  // Keep the current thumb visible inside the list only, without scrolling anything else.
+  const list = $('thumb-list');
+  const thumb = state.pages[state.active]?.thumb;
+  if (!thumb) return;
+  const g = list.getBoundingClientRect();
+  const c = thumb.getBoundingClientRect();
+  if (c.top < g.top) list.scrollTop -= g.top - c.top;
+  else if (c.bottom > g.bottom) list.scrollTop += c.bottom - g.bottom;
 }
 
 // ---------- wiring ----------
@@ -886,6 +993,7 @@ function wire() {
   $('btn-zoom-in').addEventListener('click', zoomIn);
   $('btn-zoom-out').addEventListener('click', zoomOut);
   $('btn-zoom-fit').addEventListener('click', zoomFit);
+  $('btn-thumbs').addEventListener('click', toggleThumbs);
   $('btn-sig-save').addEventListener('click', saveSignature);
 
   let lastWheelZoom = 0;

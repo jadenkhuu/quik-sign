@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>quik-sign</title><style>/*__CSS__*/</style><!--__PWA_HEAD__--></head>
 <body class="app">
-<header class="topbar"><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span><span class="spacer"></span>
+<header class="topbar"><button class="btn btn-sm icon-btn" id="btn-thumbs" title="Show or hide pages" aria-label="Show or hide pages" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span><span class="spacer"></span>
   <div class="top-actions">
     <button class="btn btn-sm" id="btn-layer" title="Show or hide the ink layer · h"><span id="layer-text">ink on</span></button>
     <button class="btn btn-sm" id="btn-theme" title="Switch theme · t"><span id="theme-text">graphite</span></button>
@@ -33,7 +33,6 @@
       <button class="btn btn-sm" id="btn-zoom-out" aria-label="Zoom out" title="Zoom out · ctrl+-">-</button><span class="zoom-text" id="zoom-text">—</span><button class="btn btn-sm" id="btn-zoom-in" aria-label="Zoom in" title="Zoom in · ctrl+=">+</button><button class="btn btn-sm" id="btn-zoom-fit" title="Fit width · ctrl+0">fit</button>
     </div>
   </section>
-  <section class="side-section" id="pages-section" hidden><div class="side-label"><span>pages</span><span id="pages-summary"></span></div><div class="page-grid" id="page-grid"></div></section>
   <section class="side-section"><div class="side-label">signatures</div><button class="btn row" id="btn-sig-save" title="Save the selection as a signature · s"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">select strokes, press s to save</div></section>
   <section class="side-section"><div class="side-label">edit</div>
     <div class="side-inline">
@@ -48,6 +47,7 @@
     <div class="info-line info-msg"><span class="caret">&gt;</span> <span id="status-msg">ready</span></div>
   </section>
 </aside>
+<nav class="thumbs" id="thumbs" aria-label="Pages"><div class="thumbs-head"><span>pages</span><span id="pages-summary"></span></div><div class="thumb-list" id="thumb-list"></div></nav>
 <main class="viewer" id="viewer">
   <section class="empty" id="empty">
     <p class="prompt">$ quik-sign open</p>
