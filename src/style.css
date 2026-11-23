@@ -94,6 +94,36 @@ body {
 .info-msg #status-msg { color: var(--text-2); }
 .caret { color: var(--accent); }
 .zoom-text { min-width: 72px; text-align: center; color: var(--text-2); font-size: 12px; }
+.side-section[hidden] { display: none; }
+
+.page-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-height: 132px; overflow-y: auto; }
+.page-cell {
+  position: relative;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+}
+.page-cell:hover { background: var(--surface); color: var(--text); }
+.page-cell.is-current { border-color: var(--line-2); color: var(--text); }
+.page-cell.has-ink { color: var(--accent); }
+.page-cell.has-ink::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.page-cell:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
 
 .brand-name { font-weight: 500; }
 .brand-file {

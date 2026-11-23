@@ -107,6 +107,8 @@ async function openFile(file) {
 
 function buildPages() {
   pagesEl.textContent = '';
+  const grid = $('page-grid');
+  grid.textContent = '';
   const n = state.pages.length;
   for (const p of state.pages) {
     const wrap = document.createElement('div');
@@ -114,7 +116,6 @@ function buildPages() {
     wrap.dataset.index = String(p.index);
     const label = document.createElement('div');
     label.className = 'page-label';
-    label.textContent = `page ${p.index + 1} / ${n}`;
     const el = document.createElement('div');
     el.className = 'page';
     const pdfCanvas = document.createElement('canvas');
@@ -124,10 +125,29 @@ function buildPages() {
     el.append(pdfCanvas, inkCanvas);
     wrap.append(label, el);
     pagesEl.appendChild(wrap);
-    Object.assign(p, { wrap, el, pdfCanvas, inkCanvas });
+    const cell = document.createElement('button');
+    cell.className = 'page-cell';
+    cell.dataset.index = String(p.index);
+    cell.setAttribute('aria-label', `Go to page ${p.index + 1}`);
+    cell.textContent = String(p.index + 1);
+    cell.addEventListener('click', () => goToPage(p.index));
+    grid.appendChild(cell);
+    Object.assign(p, { wrap, el, label, cell, pdfCanvas, inkCanvas });
     wireInk(p);
     applyCursor(p);
   }
+}
+
+// While a navigator jump is scrolling, scroll-driven active-page tracking holds off.
+let navLockUntil = 0;
+
+function goToPage(i) {
+  const p = state.pages[i];
+  if (!p) return;
+  const top = viewer.scrollTop + p.wrap.getBoundingClientRect().top - viewer.getBoundingClientRect().top - 16;
+  navLockUntil = performance.now() + 1000;
+  viewer.scrollTo({ top, behavior: 'smooth' });
+  setActive(i);
 }
 
 // ---------- layout / render ----------
@@ -583,6 +603,7 @@ viewer.addEventListener('scroll', () => {
   scrollQueued = true;
   requestAnimationFrame(() => {
     scrollQueued = false;
+    if (performance.now() < navLockUntil) return;
     updateActive();
   });
 });
@@ -634,7 +655,8 @@ async function save() {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     state.dirty = false;
-    setStatus(`saved ${filename}`);
+    const inked = state.pages.filter(p => p.strokes.length).map(p => p.index + 1);
+    setStatus(`saved ${filename} · ${inked.length ? `ink on pages ${inked.join(', ')}` : 'no ink'}`);
   } catch (err) {
     setStatus(`save failed: ${err.message}`);
   }
@@ -657,6 +679,31 @@ function updateUi() {
   $('info-strokes').textContent = hasDoc ? plural(totalStrokes(), 'stroke') : '';
   const pct = hasDoc ? Math.round(state.pages[0].scale * 100) : 0;
   $('zoom-text').textContent = !hasDoc ? 'fit' : state.zoom === null ? `fit ${pct}%` : `${pct}%`;
+  updatePageNav(hasDoc);
+}
+
+function updatePageNav(hasDoc) {
+  $('pages-section').hidden = !hasDoc;
+  if (!hasDoc) return;
+  const n = state.pages.length;
+  let inked = 0;
+  for (const p of state.pages) {
+    const k = p.strokes.length;
+    if (k) inked++;
+    const label = `page ${p.index + 1} / ${n}${k ? ` · ${plural(k, 'stroke')}` : ''}`;
+    if (p.label.textContent !== label) p.label.textContent = label;
+    p.cell.classList.toggle('is-current', p.index === state.active);
+    p.cell.classList.toggle('has-ink', k > 0);
+  }
+  $('pages-summary').textContent = inked ? `${inked} inked` : '';
+  // Keep the current cell visible inside the grid only, without scrolling the sidebar or viewer.
+  const grid = $('page-grid');
+  const cell = state.pages[state.active]?.cell;
+  if (!cell) return;
+  const g = grid.getBoundingClientRect();
+  const c = cell.getBoundingClientRect();
+  if (c.top < g.top) grid.scrollTop -= g.top - c.top;
+  else if (c.bottom > g.bottom) grid.scrollTop += c.bottom - g.bottom;
 }
 
 // ---------- wiring ----------
