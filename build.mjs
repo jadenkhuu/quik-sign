@@ -55,14 +55,20 @@ const manifest = {
   file_handlers: [{ action: './', accept: { 'application/pdf': ['.pdf'] } }],
 };
 
-const hash = createHash('sha256').update(indexHtml).digest('hex').slice(0, 8);
+const manifestText = JSON.stringify(manifest, null, 2) + '\n';
+
+// Version the service worker by every cached asset, in the same order as ASSETS in src/sw.js.
+const icons = ['icon.svg', 'icon-192.png', 'icon-512.png'];
+const hasher = createHash('sha256').update(indexHtml).update(manifestText);
+for (const f of icons) hasher.update(readFileSync(`assets/${f}`));
+const hash = hasher.digest('hex').slice(0, 8);
 const sw = fill(read('src/sw.js'), '__VERSION__', `${version}-${hash}`);
 
 mkdirSync('docs', { recursive: true });
 writeFileSync('docs/index.html', indexHtml);
 writeFileSync('docs/quik-sign.html', offlineHtml);
-writeFileSync('docs/manifest.webmanifest', JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync('docs/manifest.webmanifest', manifestText);
 writeFileSync('docs/sw.js', sw);
-for (const f of ['icon.svg', 'icon-192.png', 'icon-512.png']) copyFileSync(`assets/${f}`, `docs/${f}`);
+for (const f of icons) copyFileSync(`assets/${f}`, `docs/${f}`);
 
 console.log(`built docs/index.html ${kb(indexHtml)} KB, docs/quik-sign.html ${kb(offlineHtml)} KB, sw ${version}-${hash}`);
