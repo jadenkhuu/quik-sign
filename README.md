@@ -11,13 +11,15 @@ npm run build
 
 ## Keys
 
-- p pen
-- e erase
-- v select
-- 1–4 size
+- 1 pen
+- 2 erase
+- 3 select
+- [ ] size
 - h ink layer
 - t theme
 - ctrl+c / x / v copy, cut, paste
 - del delete
 - ctrl+z undo
+- ctrl+= / - zoom
+- ctrl+0 fit
 - ctrl+s save

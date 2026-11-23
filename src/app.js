@@ -8,6 +8,7 @@ const pdfjsLib = globalThis.pdfjsLib;
 const SIZES = [1, 2, 4, 8];
 const UNDO_CAP = 100;
 const THEMES = ['graphite', 'phosphor', 'cobalt', 'paper'];
+const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 const state = {
   name: null,
@@ -18,6 +19,7 @@ const state = {
   size: 2,
   color: '#111111',
   inkVisible: true,
+  zoom: null, // null = fit to viewer width
   selection: null, // { page, ids: Set }
   clipboard: null, // { strokes, page, n }
   undo: [],
@@ -137,7 +139,8 @@ async function layout() {
   const gen = ++layoutGen;
   if (renderTask) renderTask.cancel();
   const maxW = Math.max(...state.pages.map(p => p.viewport.width));
-  const scale = Math.min(1.6, Math.max(0.5, (viewer.clientWidth - 48) / maxW));
+  const fitScale = Math.min(1.6, Math.max(0.5, (viewer.clientWidth - 48) / maxW));
+  const scale = state.zoom ?? fitScale;
   const dpr = window.devicePixelRatio || 1;
   for (const p of state.pages) {
     const cssW = Math.round(p.viewport.width * scale);
@@ -172,8 +175,41 @@ async function layout() {
 let resizeTimer = 0;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(layout, 200);
+  resizeTimer = setTimeout(() => {
+    if (state.zoom === null) layout();
+  }, 200);
 });
+
+// ---------- zoom ----------
+
+function relayoutKeepingScroll() {
+  const r = viewer.scrollTop / Math.max(1, viewer.scrollHeight);
+  layout(); // sizes every page synchronously before its first await
+  viewer.scrollTop = r * viewer.scrollHeight;
+  const pct = Math.round(state.pages[0].scale * 100);
+  setStatus(state.zoom === null ? 'zoom fit' : `zoom ${pct}%`);
+  updateUi();
+}
+
+function zoomIn() {
+  if (!state.pdf) return;
+  const cur = state.pages[0].scale;
+  state.zoom = ZOOMS.find(z => z > cur + 0.001) ?? 3;
+  relayoutKeepingScroll();
+}
+
+function zoomOut() {
+  if (!state.pdf) return;
+  const cur = state.pages[0].scale;
+  state.zoom = [...ZOOMS].reverse().find(z => z < cur - 0.001) ?? 0.5;
+  relayoutKeepingScroll();
+}
+
+function zoomFit() {
+  if (!state.pdf) return;
+  state.zoom = null;
+  relayoutKeepingScroll();
+}
 
 // ---------- ink drawing ----------
 
@@ -458,6 +494,11 @@ function setSize(size) {
   updateUi();
 }
 
+function stepSize(dir) {
+  const i = SIZES.indexOf(state.size);
+  setSize(SIZES[Math.min(SIZES.length - 1, Math.max(0, i + dir))]);
+}
+
 function setColor(color) {
   state.color = color;
   for (const b of document.querySelectorAll('[data-color]')) b.classList.toggle('is-active', b.dataset.color === color);
@@ -551,7 +592,7 @@ function toggleLayer() {
   state.inkVisible = !state.inkVisible;
   body.classList.toggle('ink-hidden', !state.inkVisible);
   if (!state.inkVisible) clearSelection();
-  $('btn-layer').firstChild.textContent = state.inkVisible ? 'ink layer on' : 'ink layer off';
+  $('layer-text').textContent = state.inkVisible ? 'ink layer on' : 'ink layer off';
   setStatus(state.inkVisible ? 'ink layer shown' : 'ink layer hidden');
   updateUi();
 }
@@ -565,7 +606,7 @@ function nextTheme() {
   const name = THEMES[themeIndex];
   if (name === 'graphite') delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = name;
-  $('btn-theme').firstChild.textContent = `theme ${name}`;
+  $('theme-text').textContent = `theme ${name}`;
   for (const p of state.pages) {
     applyCursor(p);
     drawInk(p);
@@ -605,15 +646,16 @@ function updateUi() {
   const off = (el, v) => { el.disabled = v; };
   off($('btn-save'), !hasDoc);
   off($('btn-layer'), !hasDoc);
-  for (const b of document.querySelectorAll('#tools .btn, #sizes .btn, #colors .swatch')) off(b, !hasDoc);
+  for (const b of document.querySelectorAll('button[data-tool], button[data-size], button[data-color]')) off(b, !hasDoc);
+  for (const id of ['btn-zoom-in', 'btn-zoom-out', 'btn-zoom-fit']) off($(id), !hasDoc);
   off($('btn-undo'), !hasDoc || !state.undo.length);
   off($('btn-redo'), !hasDoc || !state.redo.length);
   for (const id of ['btn-copy', 'btn-cut', 'btn-delete']) off($(id), !state.selection);
   off($('btn-paste'), !hasDoc || !state.clipboard);
-  const base = `${state.tool} · ${state.size}px`;
-  $('status-info').textContent = hasDoc
-    ? `${base} · page ${state.active + 1}/${state.pages.length} · ${plural(totalStrokes(), 'stroke')}`
-    : base;
+  $('info-page').textContent = hasDoc ? `page ${state.active + 1} / ${state.pages.length}` : 'no file';
+  $('info-strokes').textContent = hasDoc ? plural(totalStrokes(), 'stroke') : '';
+  const pct = hasDoc ? Math.round(state.pages[0].scale * 100) : 0;
+  $('zoom-text').textContent = !hasDoc ? 'fit' : state.zoom === null ? `fit ${pct}%` : `${pct}%`;
 }
 
 // ---------- wiring ----------
@@ -642,7 +684,7 @@ function wire() {
     openFile(e.dataTransfer?.files[0]);
   });
 
-  for (const b of document.querySelectorAll('#tools [data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
+  for (const b of document.querySelectorAll('button[data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
   for (const b of document.querySelectorAll('[data-size]')) b.addEventListener('click', () => setSize(Number(b.dataset.size)));
   for (const b of document.querySelectorAll('[data-color]')) {
     b.style.setProperty('--c', b.dataset.color);
@@ -657,6 +699,20 @@ function wire() {
   $('btn-layer').addEventListener('click', toggleLayer);
   $('btn-theme').addEventListener('click', nextTheme);
   $('btn-save').addEventListener('click', save);
+  $('btn-zoom-in').addEventListener('click', zoomIn);
+  $('btn-zoom-out').addEventListener('click', zoomOut);
+  $('btn-zoom-fit').addEventListener('click', zoomFit);
+
+  let lastWheelZoom = 0;
+  viewer.addEventListener('wheel', e => {
+    if (!(e.ctrlKey || e.metaKey) || !state.pdf) return;
+    e.preventDefault();
+    const now = performance.now();
+    if (now - lastWheelZoom < 120 || e.deltaY === 0) return;
+    lastWheelZoom = now;
+    if (e.deltaY < 0) zoomIn();
+    else zoomOut();
+  }, { passive: false });
 
   window.addEventListener('keydown', onKey);
   window.addEventListener('beforeunload', e => {
@@ -686,13 +742,17 @@ function onKey(e) {
   else if (mod && key === 'x') cut();
   else if (mod && key === 'v') paste();
   else if (mod && key === 's') save();
+  else if (mod && (key === '=' || key === '+')) zoomIn();
+  else if (mod && key === '-') zoomOut();
+  else if (mod && key === '0') zoomFit();
   else if (key === 'escape') { clearSelection(); updateUi(); }
   else if (plain && (key === 'delete' || key === 'backspace')) del();
-  else if (plain && key === 'p') setTool('pen');
-  else if (plain && key === 'e') setTool('erase');
-  else if (plain && key === 'v') setTool('select');
+  else if (plain && key === '1') setTool('pen');
+  else if (plain && key === '2') setTool('erase');
+  else if (plain && key === '3') setTool('select');
+  else if (plain && key === '[') stepSize(-1);
+  else if (plain && key === ']') stepSize(1);
   else if (plain && key === 'h') toggleLayer();
-  else if (plain && key >= '1' && key <= '4' && key.length === 1) setSize(SIZES[Number(key) - 1]);
   else handled = false;
 
   if (handled) e.preventDefault();
