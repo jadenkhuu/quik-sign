@@ -73,27 +73,32 @@ body {
   grid-row: 2;
   background: var(--bar);
   border-right: 1px solid var(--line);
-  padding: 12px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   overflow-y: auto;
 }
-.side-section { display: flex; flex-direction: column; gap: 2px; }
+.side-section { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; }
+.side-section + .side-section { border-top: 1px solid var(--line); }
 .side-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 16px;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
+  padding: 0 10px;
 }
-.side-inline { display: flex; gap: 4px; align-items: center; }
+.side-inline { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .side-sep { width: 1px; height: 16px; background: var(--line); flex: none; }
-.side-info { margin-top: auto; }
-.info-line { font-size: 12px; line-height: 18px; color: var(--muted); }
+.side-info { margin-top: auto; border-top: 1px solid var(--line); }
+.info-line, #sig-empty { font-size: 11px; line-height: 16px; color: var(--muted); padding: 0 10px; }
+.info-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .info-msg #status-msg { color: var(--text-2); }
+.sidebar .btn:disabled, .sidebar .sig-use:disabled, .sidebar .swatch:disabled { opacity: 0.35; }
+#btn-theme { min-width: 80px; justify-content: center; }
 .caret { color: var(--accent); }
 .zoom-text { min-width: 72px; text-align: center; color: var(--text-2); font-size: 12px; }
 .side-section[hidden] { display: none; }
@@ -197,7 +202,7 @@ kbd {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1px solid var(--line-2);
+  border: 1px solid var(--muted);
   padding: 0;
   cursor: pointer;
   background: var(--c);

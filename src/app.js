@@ -40,7 +40,9 @@ const accent = () => getComputedStyle(document.documentElement).getPropertyValue
 const totalStrokes = () => state.pages.reduce((n, p) => n + p.strokes.length, 0);
 
 function setStatus(msg) {
-  $('status-msg').textContent = msg;
+  const el = $('status-msg');
+  el.textContent = msg;
+  el.title = msg;
 }
 
 // ---------- worker ----------
