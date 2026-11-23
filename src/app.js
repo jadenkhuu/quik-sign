@@ -633,7 +633,140 @@ function nextTheme() {
     applyCursor(p);
     drawInk(p);
   }
+  renderSigs();
   setStatus(`theme ${name}`);
+}
+
+// ---------- saved signatures (the only thing kept in browser storage) ----------
+
+const SIG_KEY = 'quik-sign:signatures:v1';
+const SIG_MAX = 8;
+
+function loadSigs() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SIG_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSigs(arr) {
+  try {
+    localStorage.setItem(SIG_KEY, JSON.stringify(arr));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let sigs = loadSigs();
+
+function saveSignature() {
+  const sel = state.selection;
+  if (!sel) return;
+  if (sigs.length >= SIG_MAX) {
+    setStatus(`signature list is full (${SIG_MAX}), delete one first`);
+    return;
+  }
+  const clones = selectedStrokes(state.pages[sel.page]).map(cloneStroke);
+  const bb = unionBBox(clones.map(strokeBBox));
+  const item = { id: newId(), w: bb.w, h: bb.h, strokes: translateStrokes(clones, -bb.x, -bb.y) };
+  const next = [item, ...sigs];
+  if (saveSigs(next)) {
+    sigs = next;
+    setStatus(`saved signature · ${plural(clones.length, 'stroke')}`);
+  } else {
+    setStatus('could not save: browser storage is unavailable');
+  }
+  renderSigs();
+  updateUi();
+}
+
+function placeSignature(item) {
+  if (!state.pdf) return;
+  const p = state.pages[state.active];
+  const pageW = p.viewport.width, pageH = p.viewport.height;
+  const pr = p.el.getBoundingClientRect();
+  const vr = viewer.getBoundingClientRect();
+  const left = Math.max(pr.left, vr.left), right = Math.min(pr.right, vr.right);
+  const top = Math.max(pr.top, vr.top), bottom = Math.min(pr.bottom, vr.bottom);
+  const c = right > left && bottom > top
+    ? [((left + right) / 2 - pr.left) / p.scale, ((top + bottom) / 2 - pr.top) / p.scale]
+    : [pageW / 2, pageH / 2];
+  const x = Math.max(0, Math.min(Math.max(0, c[0] - item.w / 2), pageW - item.w));
+  const y = Math.max(0, Math.min(Math.max(0, c[1] - item.h / 2), pageH - item.h));
+  pushUndo();
+  const added = translateStrokes(item.strokes, x, y).map(s => ({ ...s, id: newId() }));
+  p.strokes.push(...added);
+  clearSelection();
+  state.selection = { page: p.index, ids: new Set(added.map(s => s.id)) };
+  setTool('select');
+  drawInk(p);
+  setStatus(`placed signature on page ${p.index + 1}`);
+  updateUi();
+}
+
+function deleteSignature(item) {
+  if (!confirm('Delete this saved signature?')) return;
+  const next = sigs.filter(s => s.id !== item.id);
+  saveSigs(next);
+  sigs = next;
+  setStatus('deleted saved signature');
+  renderSigs();
+  updateUi();
+}
+
+function drawSigThumb(canvas, item) {
+  const dpr = window.devicePixelRatio || 1;
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  canvas.width = Math.round(cw * dpr);
+  canvas.height = Math.round(ch * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const pad = 2;
+  const s = Math.min((cw - 2 * pad) / Math.max(item.w, 1e-6), (ch - 2 * pad) / Math.max(item.h, 1e-6));
+  if (!(s > 0)) return;
+  const ox = (cw - item.w * s) / 2, oy = (ch - item.h * s) / 2;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const st of item.strokes) {
+    ctx.lineWidth = Math.max(1, st.width * s);
+    ctx.beginPath();
+    const pts = st.points.map(([px, py]) => [ox + px * s, oy + py * s]);
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    if (pts.length === 1) ctx.lineTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+  }
+}
+
+function renderSigs() {
+  const list = $('sig-list');
+  list.textContent = '';
+  sigs.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'sig-item';
+    const use = document.createElement('button');
+    use.className = 'sig-use';
+    use.setAttribute('aria-label', `Place signature ${i + 1}`);
+    use.title = 'Place on current page';
+    const canvas = document.createElement('canvas');
+    use.appendChild(canvas);
+    use.addEventListener('click', () => placeSignature(item));
+    const del = document.createElement('button');
+    del.className = 'btn btn-sm sig-del';
+    del.setAttribute('aria-label', `Delete signature ${i + 1}`);
+    del.textContent = '×';
+    del.addEventListener('click', () => deleteSignature(item));
+    row.append(use, del);
+    list.appendChild(row);
+    drawSigThumb(canvas, item);
+  });
+  $('sig-empty').hidden = sigs.length > 0;
 }
 
 // ---------- save ----------
@@ -679,6 +812,8 @@ function updateUi() {
   $('info-strokes').textContent = hasDoc ? plural(totalStrokes(), 'stroke') : '';
   const pct = hasDoc ? Math.round(state.pages[0].scale * 100) : 0;
   $('zoom-text').textContent = !hasDoc ? 'fit' : state.zoom === null ? `fit ${pct}%` : `${pct}%`;
+  off($('btn-sig-save'), !hasDoc || !state.selection);
+  for (const b of document.querySelectorAll('.sig-use')) off(b, !hasDoc);
   updatePageNav(hasDoc);
 }
 
@@ -750,6 +885,7 @@ function wire() {
   $('btn-zoom-in').addEventListener('click', zoomIn);
   $('btn-zoom-out').addEventListener('click', zoomOut);
   $('btn-zoom-fit').addEventListener('click', zoomFit);
+  $('btn-sig-save').addEventListener('click', saveSignature);
 
   let lastWheelZoom = 0;
   viewer.addEventListener('wheel', e => {
@@ -801,6 +937,7 @@ function onKey(e) {
   else if (plain && key === '[') stepSize(-1);
   else if (plain && key === ']') stepSize(1);
   else if (plain && key === 'h') toggleLayer();
+  else if (plain && key === 's') saveSignature();
   else handled = false;
 
   if (handled) e.preventDefault();
@@ -842,6 +979,7 @@ body.dataset.tool = state.tool;
 setTool(state.tool);
 setSize(state.size);
 setColor(state.color);
+renderSigs();
 updateUi();
 
 window.__quiksign = { state, exportPdf: exportCurrent };

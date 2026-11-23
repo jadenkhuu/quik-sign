@@ -96,6 +96,23 @@ body {
 .zoom-text { min-width: 72px; text-align: center; color: var(--text-2); font-size: 12px; }
 .side-section[hidden] { display: none; }
 
+.sig-list { display: flex; flex-direction: column; gap: 4px; }
+.sig-item { display: flex; gap: 4px; align-items: center; }
+.sig-use {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 140ms var(--ease), background-color 140ms var(--ease);
+}
+.sig-use:hover:not(:disabled) { border-color: var(--line-2); background: var(--raised); }
+.sig-use:disabled { opacity: 0.4; cursor: default; }
+.sig-use canvas { display: block; width: 100%; height: 100%; }
+
 .page-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; max-height: 132px; overflow-y: auto; }
 .page-cell {
   position: relative;

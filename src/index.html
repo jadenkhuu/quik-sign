@@ -34,6 +34,7 @@
     <button class="btn row" id="btn-undo"><span>undo</span><kbd>ctrl+z</kbd></button>
     <button class="btn row" id="btn-redo"><span>redo</span><kbd>ctrl+y</kbd></button>
   </section>
+  <section class="side-section"><div class="side-label"><span>signatures</span><span><kbd>s</kbd></span></div><button class="btn row" id="btn-sig-save"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">select strokes, then save them here to reuse on any PDF</div></section>
   <section class="side-section"><div class="side-label">view</div>
     <button class="btn row" id="btn-layer"><span id="layer-text">ink layer on</span><kbd>h</kbd></button>
     <button class="btn row" id="btn-theme"><span id="theme-text">theme graphite</span><kbd>t</kbd></button>
@@ -55,9 +56,9 @@
   <section class="empty" id="empty">
     <p class="prompt">$ quik-sign open</p>
     <h1 class="empty-title">No file open</h1>
-    <p class="empty-text">Drop a PDF anywhere in this window, or open one. Nothing is uploaded or stored; you get a new PDF back as a download</p>
+    <p class="empty-text">Drop a PDF anywhere in this window, or open one. Nothing is uploaded; you get a new PDF back as a download. Saved signatures stay in this browser only</p>
     <button class="btn btn-primary" id="btn-open-empty">Open PDF<kbd>o</kbd></button>
-    <p class="keys">1 pen · 2 erase · 3 select · [ ] size · h ink layer · t theme · ctrl+c / x / v copy, cut, paste · del delete · ctrl+z undo · ctrl+= / - zoom · ctrl+0 fit · ctrl+s save</p>
+    <p class="keys">1 pen · 2 erase · 3 select · [ ] size · h ink layer · t theme · ctrl+c / x / v copy, cut, paste · del delete · s save signature · ctrl+z undo · ctrl+= / - zoom · ctrl+0 fit · ctrl+s save</p>
   </section>
   <div class="pages" id="pages"></div>
 </main>

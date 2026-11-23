@@ -41,7 +41,7 @@ const offlineHtml = fill(html, '<!--__PWA_HEAD__-->', offlineHead);
 const manifest = {
   name: 'quik-sign',
   short_name: 'quik-sign',
-  description: 'Sign PDFs with a pen. Nothing is uploaded or stored',
+  description: 'Sign PDFs with a pen. Nothing is uploaded',
   start_url: './',
   scope: './',
   display: 'standalone',

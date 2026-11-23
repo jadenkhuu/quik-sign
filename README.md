@@ -1,6 +1,6 @@
 # quik-sign
 
-Sign PDFs with a pen. One HTML file, nothing uploaded or stored.
+Sign PDFs with a pen. One HTML file, nothing uploaded. Saved signatures stay in your browser.
 
 ## Use it
 
@@ -25,6 +25,7 @@ npm run build
 - t theme
 - ctrl+c / x / v copy, cut, paste
 - del delete
+- s save signature
 - ctrl+z undo
 - ctrl+= / - zoom
 - ctrl+0 fit
