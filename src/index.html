@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nib</title><style>/*__CSS__*/</style></head>
+<body class="app">
+<header class="topbar">
+  <div class="brand"><span class="brand-name">nib</span><span class="brand-file" id="file-name">~/no file</span></div>
+  <span class="sep"></span>
+  <div class="group" id="tools">
+    <button class="btn" data-tool="pen">pen<kbd>p</kbd></button>
+    <button class="btn" data-tool="erase">erase<kbd>e</kbd></button>
+    <button class="btn" data-tool="select">select<kbd>v</kbd></button>
+  </div>
+  <span class="sep"></span>
+  <div class="group" id="sizes"><span class="label">size</span>
+    <button class="btn btn-sm" data-size="1">1</button><button class="btn btn-sm" data-size="2">2</button>
+    <button class="btn btn-sm" data-size="4">4</button><button class="btn btn-sm" data-size="8">8</button></div>
+  <div class="group" id="colors"><span class="label">ink</span>
+    <button class="swatch" data-color="#111111" title="Black" aria-label="Black ink"></button>
+    <button class="swatch" data-color="#1f4fd1" title="Blue" aria-label="Blue ink"></button></div>
+  <span class="sep"></span>
+  <div class="group">
+    <button class="btn" id="btn-copy">copy</button><button class="btn" id="btn-cut">cut</button>
+    <button class="btn" id="btn-paste">paste</button><button class="btn" id="btn-delete">delete</button></div>
+  <span class="sep"></span>
+  <div class="group"><button class="btn" id="btn-undo">undo</button><button class="btn" id="btn-redo">redo</button></div>
+  <span class="spacer"></span>
+  <button class="btn" id="btn-theme">theme graphite<kbd>t</kbd></button>
+  <button class="btn" id="btn-layer">ink layer on<kbd>h</kbd></button>
+  <button class="btn" id="btn-open">open<kbd>o</kbd></button>
+  <button class="btn btn-primary" id="btn-save">save pdf</button>
+  <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+</header>
+<main class="viewer" id="viewer">
+  <section class="empty" id="empty">
+    <p class="prompt">$ nib open</p>
+    <h1 class="empty-title">No file open</h1>
+    <p class="empty-text">Drop a PDF anywhere in this window, or open one. Nothing is uploaded or stored; you get a new PDF back as a download</p>
+    <button class="btn btn-primary" id="btn-open-empty">Open PDF<kbd>o</kbd></button>
+    <p class="keys">p pen · e erase · v select · 1–4 size · h ink layer · t theme · ctrl+c / x / v copy, cut, paste · del delete · ctrl+z undo · ctrl+s save</p>
+  </section>
+  <div class="pages" id="pages"></div>
+</main>
+<footer class="statusbar"><span class="status-msg"><span class="caret">&gt;</span> <span id="status-msg">ready</span></span><span class="status-info" id="status-info">pen · 2px</span></footer>
+<script type="text/plain" id="pdfjs-worker-src">/*__PDFJS_WORKER__*/</script>
+<script>/*__PDFJS__*/</script>
+<script>/*__PDFLIB__*/</script>
+<script>/*__APP__*/</script>
+</body></html>
