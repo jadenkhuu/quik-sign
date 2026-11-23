@@ -60,11 +60,13 @@ function setStatus(msg) {
   const el = $('status-msg');
   el.textContent = msg;
   el.title = msg;
+  el.parentElement.classList.toggle('is-empty', !msg);
   clearTimeout(statusTimer);
   if (!STICKY_STATUS.test(msg)) {
     statusTimer = setTimeout(() => {
       el.textContent = '';
       el.title = '';
+      el.parentElement.classList.add('is-empty');
     }, 4000);
   }
 }
@@ -809,7 +811,8 @@ function openThemeMenu() {
   clearTimeout(menuCloseTimer);
   list.hidden = false;
   $('btn-theme').setAttribute('aria-expanded', 'true');
-  requestAnimationFrame(() => list.classList.add('is-open'));
+  void list.offsetWidth; // reflow so the opacity transition runs without waiting for a frame
+  list.classList.add('is-open');
   (themeOptions().find(o => o.getAttribute('aria-selected') === 'true') || themeOptions()[0]).focus();
 }
 
@@ -1166,6 +1169,7 @@ function onKey(e) {
   else if (mod && key === '0') zoomFit();
   else if (key === 'escape') { clearSelection(); updateUi(); }
   else if (plain && (key === 'delete' || key === 'backspace')) del();
+  else if (plain && !state.inkVisible && ['1', '2', '3', '[', ']'].includes(key)) {} // tools and sizes are off while ink is hidden
   else if (plain && key === '1') setTool('pen');
   else if (plain && key === '2') setTool('erase');
   else if (plain && key === '3') setTool('select');

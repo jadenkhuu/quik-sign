@@ -1,5 +1,5 @@
 // Caches only the app's own files so it opens offline. Built into docs/sw.js by build.mjs.
-const CACHE = 'quik-sign-0.1.0-03655ed0';
+const CACHE = 'quik-sign-0.1.0-5a9118cf';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

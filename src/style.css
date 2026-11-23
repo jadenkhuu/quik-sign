@@ -129,6 +129,7 @@ body {
 .info-msg #status-msg { color: var(--text-2); }
 .sidebar .btn:disabled, .sidebar .sig-use:disabled, .sidebar .swatch:disabled { opacity: 0.35; }
 .caret { color: var(--accent); }
+.info-msg.is-empty .caret { visibility: hidden; }
 .zoom-text { min-width: 72px; text-align: center; color: var(--text-2); font-size: 12px; }
 
 .sig-list { display: flex; flex-direction: column; gap: 4px; max-height: 148px; overflow-y: auto; }
