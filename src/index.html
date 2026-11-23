@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>nib</title><style>/*__CSS__*/</style></head>
+<title>quik-sign</title><style>/*__CSS__*/</style><!--__PWA_HEAD__--></head>
 <body class="app">
-<header class="topbar"><span class="brand-name">nib</span><span class="brand-file" id="file-name">~/no file</span></header>
+<header class="topbar"><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span></header>
 <aside class="sidebar">
   <section class="side-section"><div class="side-label">tools</div>
     <button class="btn row" data-tool="pen"><span>pen</span><kbd>1</kbd></button>
@@ -41,6 +41,7 @@
   <section class="side-section"><div class="side-label">file</div>
     <button class="btn row" id="btn-open"><span>open</span><kbd>o</kbd></button>
     <button class="btn row btn-primary" id="btn-save"><span>save pdf</span><kbd>ctrl+s</kbd></button>
+    <button class="btn row" id="btn-install" hidden><span>install app</span></button>
     <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
   </section>
   <section class="side-section side-info"><div class="side-label">info</div>
@@ -51,7 +52,7 @@
 </aside>
 <main class="viewer" id="viewer">
   <section class="empty" id="empty">
-    <p class="prompt">$ nib open</p>
+    <p class="prompt">$ quik-sign open</p>
     <h1 class="empty-title">No file open</h1>
     <p class="empty-text">Drop a PDF anywhere in this window, or open one. Nothing is uploaded or stored; you get a new PDF back as a download</p>
     <button class="btn btn-primary" id="btn-open-empty">Open PDF<kbd>o</kbd></button>

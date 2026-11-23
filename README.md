@@ -1,6 +1,12 @@
-# nib
+# quik-sign
 
-One HTML file. Open `dist/nib.html` in a browser, drop in a PDF, sign it, save. Nothing is uploaded or stored.
+Sign PDFs with a pen. One HTML file, nothing uploaded or stored.
+
+## Use it
+
+- Web: https://<your-username>.github.io/quik-sign/ (enable Pages: Settings → Pages → Deploy from a branch → main, /docs)
+- Install: open the web version in Chrome or Edge and click install app (or the install icon in the address bar). It runs in its own window, works offline, and can open PDFs from Explorer
+- Offline file: download docs/quik-sign.html and double-click it
 
 ## Build
 

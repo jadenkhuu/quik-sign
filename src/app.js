@@ -97,7 +97,7 @@ async function openFile(file) {
     selection: null, clipboard: null, undo: [], redo: [], dirty: false, active: 0, drag: null,
   });
   $('file-name').textContent = `~/${file.name}`;
-  document.title = `nib — ${file.name}`;
+  document.title = `quik-sign — ${file.name}`;
   body.classList.add('has-doc');
   buildPages();
   await layout();
@@ -758,14 +758,42 @@ function onKey(e) {
   if (handled) e.preventDefault();
 }
 
+// ---------- install / os launch ----------
+
+function wireInstall() {
+  const btn = $('btn-install');
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferred = e;
+    btn.hidden = false;
+  });
+  btn.addEventListener('click', async () => {
+    if (!deferred) return;
+    await deferred.prompt();
+    deferred = null;
+    btn.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => {
+    btn.hidden = true;
+    setStatus('installed');
+  });
+  if ('launchQueue' in window) {
+    window.launchQueue.setConsumer(async p => {
+      if (p.files && p.files.length) openFile(await p.files[0].getFile());
+    });
+  }
+}
+
 // ---------- startup ----------
 
 setupWorker();
 wire();
+wireInstall();
 body.dataset.tool = state.tool;
 setTool(state.tool);
 setSize(state.size);
 setColor(state.color);
 updateUi();
 
-window.__nib = { state, exportPdf: exportCurrent };
+window.__quiksign = { state, exportPdf: exportCurrent };

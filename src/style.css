@@ -120,6 +120,7 @@ body {
 .btn:hover:not(:disabled) { background: var(--surface); color: var(--text); }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.4; cursor: default; }
+.btn[hidden] { display: none; }
 .btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 .btn-sm { padding: 0 8px; min-width: 28px; justify-content: center; }
 .btn.is-active { background: var(--raised); color: var(--accent); border-color: var(--line-2); }

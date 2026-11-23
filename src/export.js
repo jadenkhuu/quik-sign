@@ -23,6 +23,6 @@ export async function exportPdf(originalBytes, pages) {
       });
     }
   });
-  doc.setProducer('nib');
+  doc.setProducer('quik-sign');
   return await doc.save();
 }
