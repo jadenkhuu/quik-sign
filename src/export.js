@@ -23,5 +23,6 @@ export async function exportPdf(originalBytes, pages) {
       });
     }
   });
+  doc.setProducer('nib');
   return await doc.save();
 }

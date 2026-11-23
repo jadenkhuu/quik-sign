@@ -44,7 +44,7 @@ body {
   font: 400 13px/20px var(--mono);
   -webkit-font-smoothing: antialiased;
 }
-.app { display: grid; grid-template-rows: 44px 1fr 28px; height: 100vh; overflow: hidden; }
+.app { display: grid; grid-template-rows: auto 1fr 28px; height: 100vh; overflow: hidden; }
 
 .topbar {
   background: var(--bar);
@@ -52,8 +52,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  overflow-x: auto;
+  padding: 8px 12px;
+  min-height: 44px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  row-gap: 6px;
   white-space: nowrap;
 }
 .group { display: flex; align-items: center; gap: 4px; }
