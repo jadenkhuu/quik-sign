@@ -97,6 +97,7 @@ async function openFile(file) {
     selection: null, clipboard: null, undo: [], redo: [], dirty: false, active: 0, drag: null,
   });
   $('file-name').textContent = `~/${file.name}`;
+  $('file-name').title = file.name;
   document.title = `quik-sign — ${file.name}`;
   body.classList.add('has-doc');
   buildPages();

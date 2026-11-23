@@ -62,9 +62,11 @@ body {
   padding: 0 16px;
   height: 36px;
   box-sizing: border-box;
+  user-select: none;
 }
 
 .sidebar {
+  user-select: none;
   grid-column: 1;
   grid-row: 2;
   background: var(--bar);
@@ -97,7 +99,9 @@ body {
 .brand-file {
   color: var(--text-2);
   margin-left: 8px;
-  max-width: 260px;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
