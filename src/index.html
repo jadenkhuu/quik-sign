@@ -2,53 +2,49 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>quik-sign</title><style>/*__CSS__*/</style><!--__PWA_HEAD__--></head>
 <body class="app">
-<header class="topbar"><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span></header>
+<header class="topbar"><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span><span class="spacer"></span>
+  <div class="top-actions">
+    <button class="btn btn-sm" id="btn-layer" title="Show or hide the ink layer · h"><span id="layer-text">ink on</span></button>
+    <button class="btn btn-sm" id="btn-theme" title="Switch theme · t"><span id="theme-text">graphite</span></button>
+    <span class="top-sep"></span>
+    <button class="btn btn-sm" id="btn-install" hidden><span>install app</span></button>
+    <button class="btn btn-sm" id="btn-open" title="Open a PDF · o">open</button>
+    <button class="btn btn-sm btn-primary" id="btn-save" title="Save a signed copy · ctrl+s"><span>save pdf</span></button>
+    <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+  </div>
+</header>
 <aside class="sidebar">
   <section class="side-section"><div class="side-label">tools</div>
-    <button class="btn row" data-tool="pen"><span>pen</span><kbd>1</kbd></button>
-    <button class="btn row" data-tool="erase"><span>erase</span><kbd>2</kbd></button>
-    <button class="btn row" data-tool="select"><span>select</span><kbd>3</kbd></button>
+    <button class="btn row" data-tool="pen" title="Pen · 1"><span>pen</span><kbd>1</kbd></button>
+    <button class="btn row" data-tool="erase" title="Erase whole strokes · 2"><span>erase</span><kbd>2</kbd></button>
+    <button class="btn row" data-tool="select" title="Select, move and resize · 3"><span>select</span><kbd>3</kbd></button>
   </section>
-  <section class="side-section"><div class="side-label">size<span><kbd>[</kbd><kbd>]</kbd></span></div>
+  <section class="side-section"><div class="side-label">pen</div>
     <div class="side-inline">
-      <button class="btn btn-sm" data-size="1">1</button><button class="btn btn-sm" data-size="2">2</button>
-      <button class="btn btn-sm" data-size="4">4</button><button class="btn btn-sm" data-size="8">8</button>
-    </div>
-  </section>
-  <section class="side-section"><div class="side-label">ink</div>
-    <div class="side-inline">
-      <button class="swatch" data-color="#111111" title="Black" aria-label="Black ink"></button>
-      <button class="swatch" data-color="#1f4fd1" title="Blue" aria-label="Blue ink"></button>
+      <button class="btn btn-sm" data-size="1" title="Pen size 1px · [ ]">1</button><button class="btn btn-sm" data-size="2" title="Pen size 2px · [ ]">2</button>
+      <button class="btn btn-sm" data-size="4" title="Pen size 4px · [ ]">4</button><button class="btn btn-sm" data-size="8" title="Pen size 8px · [ ]">8</button>
+      <span class="side-sep"></span>
+      <button class="swatch" data-color="#111111" title="Black ink" aria-label="Black ink"></button>
+      <button class="swatch" data-color="#1f4fd1" title="Blue ink" aria-label="Blue ink"></button>
     </div>
   </section>
   <section class="side-section"><div class="side-label">zoom</div>
     <div class="side-inline">
-      <button class="btn btn-sm" id="btn-zoom-out" aria-label="Zoom out">-</button><span class="zoom-text" id="zoom-text">fit</span><button class="btn btn-sm" id="btn-zoom-in" aria-label="Zoom in">+</button><button class="btn btn-sm" id="btn-zoom-fit">fit</button>
+      <button class="btn btn-sm" id="btn-zoom-out" aria-label="Zoom out" title="Zoom out · ctrl+-">-</button><span class="zoom-text" id="zoom-text">—</span><button class="btn btn-sm" id="btn-zoom-in" aria-label="Zoom in" title="Zoom in · ctrl+=">+</button><button class="btn btn-sm" id="btn-zoom-fit" title="Fit width · ctrl+0">fit</button>
     </div>
   </section>
-  <section class="side-section"><div class="side-label">edit</div>
-    <button class="btn row" id="btn-copy"><span>copy</span><kbd>ctrl+c</kbd></button>
-    <button class="btn row" id="btn-cut"><span>cut</span><kbd>ctrl+x</kbd></button>
-    <button class="btn row" id="btn-paste"><span>paste</span><kbd>ctrl+v</kbd></button>
-    <button class="btn row" id="btn-delete"><span>delete</span><kbd>del</kbd></button>
-    <button class="btn row" id="btn-undo"><span>undo</span><kbd>ctrl+z</kbd></button>
-    <button class="btn row" id="btn-redo"><span>redo</span><kbd>ctrl+y</kbd></button>
-  </section>
-  <section class="side-section"><div class="side-label"><span>signatures</span><span><kbd>s</kbd></span></div><button class="btn row" id="btn-sig-save"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">select strokes, then save them here to reuse on any PDF</div></section>
-  <section class="side-section"><div class="side-label">view</div>
-    <button class="btn row" id="btn-layer"><span id="layer-text">ink layer on</span><kbd>h</kbd></button>
-    <button class="btn row" id="btn-theme"><span id="theme-text">theme graphite</span><kbd>t</kbd></button>
-  </section>
-  <section class="side-section"><div class="side-label">file</div>
-    <button class="btn row" id="btn-open"><span>open</span><kbd>o</kbd></button>
-    <button class="btn row btn-primary" id="btn-save"><span>save pdf</span><kbd>ctrl+s</kbd></button>
-    <button class="btn row" id="btn-install" hidden><span>install app</span></button>
-    <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
-  </section>
   <section class="side-section" id="pages-section" hidden><div class="side-label"><span>pages</span><span id="pages-summary"></span></div><div class="page-grid" id="page-grid"></div></section>
+  <section class="side-section"><div class="side-label">signatures</div><button class="btn row" id="btn-sig-save" title="Save the selection as a signature · s"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">select strokes, press s to save</div></section>
+  <section class="side-section"><div class="side-label">edit</div>
+    <div class="side-inline">
+      <button class="btn btn-sm" id="btn-copy" title="Copy · ctrl+c">copy</button><button class="btn btn-sm" id="btn-cut" title="Cut · ctrl+x">cut</button><button class="btn btn-sm" id="btn-paste" title="Paste · ctrl+v">paste</button><button class="btn btn-sm" id="btn-delete" title="Delete · del">delete</button>
+    </div>
+    <div class="side-inline">
+      <button class="btn btn-sm" id="btn-undo" title="Undo · ctrl+z">undo</button><button class="btn btn-sm" id="btn-redo" title="Redo · ctrl+y">redo</button>
+    </div>
+  </section>
   <section class="side-section side-info"><div class="side-label">info</div>
-    <div class="info-line" id="info-page">no file</div>
-    <div class="info-line" id="info-strokes"></div>
+    <div class="info-line"><span id="info-page">no file</span><span id="info-strokes"></span></div>
     <div class="info-line info-msg"><span class="caret">&gt;</span> <span id="status-msg">ready</span></div>
   </section>
 </aside>
@@ -56,9 +52,8 @@
   <section class="empty" id="empty">
     <p class="prompt">$ quik-sign open</p>
     <h1 class="empty-title">No file open</h1>
-    <p class="empty-text">Drop a PDF anywhere in this window, or open one. Nothing is uploaded; you get a new PDF back as a download. Saved signatures stay in this browser only</p>
-    <button class="btn btn-primary" id="btn-open-empty">Open PDF<kbd>o</kbd></button>
-    <p class="keys">1 pen · 2 erase · 3 select · [ ] size · h ink layer · t theme · ctrl+c / x / v copy, cut, paste · del delete · s save signature · ctrl+z undo · ctrl+= / - zoom · ctrl+0 fit · ctrl+s save</p>
+    <p class="empty-text">Drop a PDF here, or open one</p>
+    <button class="btn btn-primary" id="btn-open-empty" title="Open a PDF · o">Open PDF</button>
   </section>
   <div class="pages" id="pages"></div>
 </main>

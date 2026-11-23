@@ -614,7 +614,7 @@ function toggleLayer() {
   state.inkVisible = !state.inkVisible;
   body.classList.toggle('ink-hidden', !state.inkVisible);
   if (!state.inkVisible) clearSelection();
-  $('layer-text').textContent = state.inkVisible ? 'ink layer on' : 'ink layer off';
+  $('layer-text').textContent = state.inkVisible ? 'ink on' : 'ink off';
   setStatus(state.inkVisible ? 'ink layer shown' : 'ink layer hidden');
   updateUi();
 }
@@ -628,7 +628,7 @@ function nextTheme() {
   const name = THEMES[themeIndex];
   if (name === 'graphite') delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = name;
-  $('theme-text').textContent = `theme ${name}`;
+  $('theme-text').textContent = name;
   for (const p of state.pages) {
     applyCursor(p);
     drawInk(p);
@@ -809,9 +809,10 @@ function updateUi() {
   for (const id of ['btn-copy', 'btn-cut', 'btn-delete']) off($(id), !state.selection);
   off($('btn-paste'), !hasDoc || !state.clipboard);
   $('info-page').textContent = hasDoc ? `page ${state.active + 1} / ${state.pages.length}` : 'no file';
-  $('info-strokes').textContent = hasDoc ? plural(totalStrokes(), 'stroke') : '';
+  $('info-strokes').textContent = hasDoc ? ` · ${plural(totalStrokes(), 'stroke')}` : '';
   const pct = hasDoc ? Math.round(state.pages[0].scale * 100) : 0;
-  $('zoom-text').textContent = !hasDoc ? 'fit' : state.zoom === null ? `fit ${pct}%` : `${pct}%`;
+  $('zoom-text').textContent = hasDoc ? `${pct}%` : '—';
+  $('btn-zoom-fit').classList.toggle('is-active', hasDoc && state.zoom === null);
   off($('btn-sig-save'), !hasDoc || !state.selection);
   for (const b of document.querySelectorAll('.sig-use')) off(b, !hasDoc);
   updatePageNav(hasDoc);
