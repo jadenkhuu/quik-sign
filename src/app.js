@@ -52,10 +52,21 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
 const totalStrokes = () => state.pages.reduce((n, p) => n + p.strokes.length, 0);
 
+// Errors stay until the next message; everything else clears after a few seconds.
+const STICKY_STATUS = /^(could not|save failed|not a pdf)/;
+let statusTimer = 0;
+
 function setStatus(msg) {
   const el = $('status-msg');
   el.textContent = msg;
   el.title = msg;
+  clearTimeout(statusTimer);
+  if (!STICKY_STATUS.test(msg)) {
+    statusTimer = setTimeout(() => {
+      el.textContent = '';
+      el.title = '';
+    }, 4000);
+  }
 }
 
 // ---------- worker ----------
@@ -123,7 +134,6 @@ async function openFile(file) {
 function buildPages() {
   pagesEl.textContent = '';
   resetThumbs();
-  const n = state.pages.length;
   for (const p of state.pages) {
     const wrap = document.createElement('div');
     wrap.className = 'page-wrap';
@@ -217,10 +227,11 @@ window.addEventListener('resize', () => {
 
 function relayoutKeepingScroll() {
   const r = viewer.scrollTop / Math.max(1, viewer.scrollHeight);
+  // Horizontally, keep what sits at the middle of the viewer at the middle.
+  const rl = (viewer.scrollLeft + viewer.clientWidth / 2) / Math.max(1, viewer.scrollWidth);
   layout(); // sizes every page synchronously before its first await
   viewer.scrollTop = r * viewer.scrollHeight;
-  const pct = Math.round(state.pages[0].scale * 100);
-  setStatus(state.zoom === null ? 'zoom fit' : `zoom ${pct}%`);
+  viewer.scrollLeft = rl * viewer.scrollWidth - viewer.clientWidth / 2;
   updateUi();
 }
 
@@ -340,7 +351,6 @@ function toggleThumbs() {
   const hidden = body.classList.toggle('thumbs-hidden');
   $('btn-thumbs').setAttribute('aria-pressed', String(!hidden));
   relayoutKeepingScroll();
-  setStatus(hidden ? 'pages hidden' : 'pages shown');
 }
 
 // ---------- ink drawing ----------
@@ -454,7 +464,6 @@ function undo() {
   state.selection = null;
   state.dirty = true;
   redrawAll();
-  setStatus('undo');
   updateUi();
 }
 
@@ -465,7 +474,6 @@ function redo() {
   state.selection = null;
   state.dirty = true;
   redrawAll();
-  setStatus('redo');
   updateUi();
 }
 
@@ -818,7 +826,6 @@ function closeThemeMenu({ refocus = false } = {}) {
 function pickTheme(id) {
   applyTheme(id);
   closeThemeMenu({ refocus: true });
-  setStatus(`theme ${id}`);
 }
 
 function wireThemeMenu() {
@@ -983,7 +990,8 @@ function renderSigs() {
     const del = document.createElement('button');
     del.className = 'btn btn-sm sig-del';
     del.setAttribute('aria-label', `Delete signature ${i + 1}`);
-    del.textContent = '×';
+    del.title = 'Delete signature';
+    del.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
     del.addEventListener('click', () => deleteSignature(item));
     row.append(use, del);
     list.appendChild(row);
@@ -1025,7 +1033,8 @@ function updateUi() {
   const off = (el, v) => { el.disabled = v; };
   off($('btn-save'), !hasDoc);
   off($('btn-layer'), !hasDoc);
-  for (const b of document.querySelectorAll('button[data-tool], button[data-size], button[data-color]')) off(b, !hasDoc);
+  $('btn-layer').setAttribute('aria-pressed', String(state.inkVisible));
+  for (const b of document.querySelectorAll('button[data-tool], button[data-size], button[data-color]')) off(b, !hasDoc || !state.inkVisible);
   for (const id of ['btn-zoom-in', 'btn-zoom-out', 'btn-zoom-fit']) off($(id), !hasDoc);
   off($('btn-undo'), !hasDoc || !state.undo.length);
   off($('btn-redo'), !hasDoc || !state.redo.length);
@@ -1136,7 +1145,7 @@ function wire() {
 function onKey(e) {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-  if (t && t.closest && t.closest('#theme-menu')) return;
+  if (t && t.closest && t.closest('#theme-list')) return;
   const key = e.key.toLowerCase();
   const mod = e.ctrlKey || e.metaKey;
   const plain = !e.ctrlKey && !e.metaKey && !e.altKey;

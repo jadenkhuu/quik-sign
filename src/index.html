@@ -2,9 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script>try{var t=localStorage.getItem('quik-sign:theme');if(['mono','midnight','phosphor','paper','parchment','snow'].indexOf(t)>-1)document.documentElement.dataset.theme=t}catch(e){}</script>
 <title>quik-sign</title><style>/*__CSS__*/</style><!--__PWA_HEAD__--></head>
 <body class="app">
-<header class="topbar"><button class="btn btn-sm icon-btn" id="btn-thumbs" title="Show or hide pages" aria-label="Show or hide pages" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name">~/no file</span><span class="spacer"></span>
+<header class="topbar"><button class="btn btn-sm icon-btn" id="btn-thumbs" title="Pages" aria-label="Pages" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M6.5 3v10"/></svg></button><span class="brand-name">quik-sign</span><span class="brand-file" id="file-name"></span><span class="spacer"></span>
   <div class="top-actions">
-    <button class="btn btn-sm" id="btn-layer" title="Show or hide the ink layer · h"><span id="layer-text">ink on</span></button>
+    <button class="btn btn-sm" id="btn-layer" title="Show or hide the ink layer · h" aria-pressed="true"><span id="layer-text">ink on</span></button>
     <div class="menu" id="theme-menu">
       <button class="btn btn-sm menu-btn" id="btn-theme" aria-haspopup="listbox" aria-expanded="false" aria-controls="theme-list" title="Theme">
         <span class="theme-dot" id="theme-dot"></span><span id="theme-text">graphite</span>
@@ -27,8 +27,8 @@
   </section>
   <section class="side-section"><div class="side-label">pen</div>
     <div class="side-inline">
-      <button class="btn btn-sm" data-size="1" title="Pen size 1px · [ ]">1</button><button class="btn btn-sm" data-size="2" title="Pen size 2px · [ ]">2</button>
-      <button class="btn btn-sm" data-size="4" title="Pen size 4px · [ ]">4</button><button class="btn btn-sm" data-size="8" title="Pen size 8px · [ ]">8</button>
+      <button class="btn btn-sm" data-size="1" title="Pen size 1px · [ ]" aria-label="Pen size 1px"><span class="size-bar" style="--s:1px"></span></button><button class="btn btn-sm" data-size="2" title="Pen size 2px · [ ]" aria-label="Pen size 2px"><span class="size-bar" style="--s:2px"></span></button>
+      <button class="btn btn-sm" data-size="4" title="Pen size 4px · [ ]" aria-label="Pen size 4px"><span class="size-bar" style="--s:4px"></span></button><button class="btn btn-sm" data-size="8" title="Pen size 8px · [ ]" aria-label="Pen size 8px"><span class="size-bar" style="--s:8px"></span></button>
       <span class="side-sep"></span>
       <button class="swatch" data-color="#111111" title="Black ink" aria-label="Black ink"></button>
       <button class="swatch" data-color="#1f4fd1" title="Blue ink" aria-label="Blue ink"></button>
@@ -36,30 +36,30 @@
   </section>
   <section class="side-section"><div class="side-label">zoom</div>
     <div class="side-inline">
-      <button class="btn btn-sm" id="btn-zoom-out" aria-label="Zoom out" title="Zoom out · ctrl+-">-</button><span class="zoom-text" id="zoom-text">—</span><button class="btn btn-sm" id="btn-zoom-in" aria-label="Zoom in" title="Zoom in · ctrl+=">+</button><button class="btn btn-sm" id="btn-zoom-fit" title="Fit width · ctrl+0">fit</button>
+      <button class="btn btn-sm" id="btn-zoom-out" aria-label="Zoom out" title="Zoom out · ctrl+-">−</button><span class="zoom-text" id="zoom-text">—</span><button class="btn btn-sm" id="btn-zoom-in" aria-label="Zoom in" title="Zoom in · ctrl+=">+</button><button class="btn btn-sm" id="btn-zoom-fit" title="Fit width · ctrl+0">fit</button>
     </div>
   </section>
-  <section class="side-section"><div class="side-label">signatures</div><button class="btn row" id="btn-sig-save" title="Save the selection as a signature · s"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">select strokes, press s to save</div></section>
+  <section class="side-section"><div class="side-label">signatures</div><button class="btn row" id="btn-sig-save" title="Save the selection as a signature · s"><span>save selection</span></button><div class="sig-list" id="sig-list"></div><div class="info-line" id="sig-empty">none saved yet</div></section>
   <section class="side-section"><div class="side-label">edit</div>
-    <div class="side-inline">
+    <div class="side-inline side-grid">
       <button class="btn btn-sm" id="btn-copy" title="Copy · ctrl+c">copy</button><button class="btn btn-sm" id="btn-cut" title="Cut · ctrl+x">cut</button><button class="btn btn-sm" id="btn-paste" title="Paste · ctrl+v">paste</button>
     </div>
-    <div class="side-inline">
+    <div class="side-inline side-grid">
       <button class="btn btn-sm" id="btn-delete" title="Delete · del">delete</button><button class="btn btn-sm" id="btn-undo" title="Undo · ctrl+z">undo</button><button class="btn btn-sm" id="btn-redo" title="Redo · ctrl+y">redo</button>
     </div>
   </section>
   <section class="side-section side-info"><div class="side-label">info</div>
     <div class="info-line"><span id="info-page">no file</span><span id="info-strokes"></span></div>
-    <div class="info-line info-msg"><span class="caret">&gt;</span> <span id="status-msg">ready</span></div>
+    <div class="info-line info-msg"><span class="caret">&gt;</span> <span id="status-msg" role="status" aria-live="polite">ready</span></div>
   </section>
 </aside>
 <nav class="thumbs" id="thumbs" aria-label="Pages"><div class="thumbs-head"><span>pages</span><span id="pages-summary"></span></div><div class="thumb-list" id="thumb-list"></div></nav>
 <main class="viewer" id="viewer">
   <section class="empty" id="empty">
     <p class="prompt">$ quik-sign open</p>
-    <h1 class="empty-title">No file open</h1>
-    <p class="empty-text">Drop a PDF here, or open one</p>
-    <button class="btn btn-primary" id="btn-open-empty" title="Open a PDF · o">Open PDF</button>
+    <h1 class="empty-title">no file open</h1>
+    <p class="empty-text">drop a pdf here, or open one</p>
+    <button class="btn btn-primary" id="btn-open-empty" title="Open a PDF · o">open pdf</button>
   </section>
   <div class="pages" id="pages"></div>
 </main>
